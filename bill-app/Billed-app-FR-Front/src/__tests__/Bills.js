@@ -7,7 +7,6 @@ import BillsUI from "../views/BillsUI.js"
 import { bills } from "../fixtures/bills.js"
 import { ROUTES_PATH } from "../constants/routes.js";
 import { localStorageMock } from "../__mocks__/localStorage.js";
-import { parseDate } from "../views/BillsUI.js";
 import router from "../app/Router.js";
 
 describe("Given I am connected as an employee", () => {
@@ -29,11 +28,20 @@ describe("Given I am connected as an employee", () => {
 
     })
     test("Then bills should be ordered from earliest to latest", () => {
-      document.body.innerHTML = BillsUI({ data: bills })
-      const dates = screen.getAllByText(/^(19|20)\d\d[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])$/i).map(a => a.innerHTML)
-      const antiChrono = (a, b) => ((parseDate(b) < parseDate(a)) ? -1 : 1)
-      const datesSorted = [...dates].sort(antiChrono)
-      expect(dates).toEqual(datesSorted)
+      document.body.innerHTML = BillsUI({ data: bills });
+      const dateElements = screen.getAllByTestId('bill-date'); // Select all date elements by their test ID
+
+      // Extract the innerText of each date element
+      const dates = dateElements.map(el => el.innerHTML);
+
+      // Parse the displayed dates into Date objects for comparison
+      const parsedDates = dates.map(date => new Date(date));
+
+      // Create a sorted version of the parsed dates (from earliest to latest)
+      const sortedDates = [...parsedDates].sort((a, b) => a - b);
+
+      // Check if the parsed dates match the sorted version
+      expect(parsedDates).toEqual(sortedDates);
     })
   })
 })

@@ -1,7 +1,7 @@
 import VerticalLayout from './VerticalLayout.js'
 import ErrorPage from "./ErrorPage.js"
 import LoadingPage from "./LoadingPage.js"
-
+import { formatDate } from '../app/format.js'
 import Actions from './Actions.js'
 
 const row = (bill) => {
@@ -9,7 +9,7 @@ const row = (bill) => {
     <tr>
       <td>${bill.type}</td>
       <td>${bill.name}</td>
-      <td>${bill.date}</td>
+      <td data-testid="bill-date">${formatDate(bill.date)}</td>
       <td>${bill.amount} €</td>
       <td>${bill.status}</td>
       <td>
@@ -20,26 +20,24 @@ const row = (bill) => {
 }
 
 const rows = (data) => {
-  console.log('Data received in BillsUI:', data); // Debug log
   if (data && data.length) {
-    return data.map(bill => row(bill)).join("");
+    const sortedData = data.sort((a, b) => new Date(b.date) - new Date(a.date));
+    return sortedData.map(bill => row(bill)).join("");
   }
   return "";
 };
 
-// Add this function to parse dates correctly
+// Add this function to parse dates 
 export const parseDate = (dateString) => {
   const [day, month, year] = dateString.split(' ');
   const monthMap = {
     'Jan.': 0, 'Fév.': 1, 'Mar.': 2, 'Avr.': 3, 'Mai.': 4, 'Juin': 5,
     'Juil.': 6, 'Aoû.': 7, 'Sep.': 8, 'Oct.': 9, 'Nov.': 10, 'Déc.': 11
   };
-  let fullYear = parseInt(year) + 2000;
-  if (fullYear > new Date().getFullYear()) {
-    fullYear -= 100;
-  }
-  return new Date(parseInt(day), fullYear, monthMap[month]);
+  const parsedYear = year.length === 2 ? `20${year}` : year;  // Adjust year parsing
+  return new Date(parseInt(parsedYear), monthMap[month], parseInt(day));
 };
+
 
 export default ({ data: bills, loading, error }) => {
 

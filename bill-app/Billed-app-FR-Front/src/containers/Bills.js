@@ -27,7 +27,6 @@ export default class {
     $('#modaleFile').modal('show')
   }
 
-  // Proposed fix:
   getBills = () => {
     if (this.store) {
       return this.store
@@ -37,15 +36,13 @@ export default class {
           const bills = snapshot
             .map(doc => ({
               ...doc,
-              date: doc.date,
-              status: formatStatus(doc.status)
+              date: doc.date,  // Ensure doc.date is in ISO format (e.g., YYYY-MM-DD)
+              status: formatStatus(doc.status),
             }))
-            .sort((a, b) => {
-              return new Date(b.date) - new Date(a.date);
-            });
-          console.log('Sorted bills:', bills); // Debug log
+            .sort((a, b) => new Date(b.date) - new Date(a.date));  // Sort by date (latest first)
+  
           return bills;
         });
     }
-  }
+  };    
 }

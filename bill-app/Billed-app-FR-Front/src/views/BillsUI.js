@@ -17,21 +17,32 @@ const row = (bill) => {
       </td>
     </tr>
     `)
-  }
+}
 
-  const rows = (data) => {
-    if (data && data.length) {
-      // Sort the bills by date in descending order before rendering the rows
-      const sortedData = data.sort((a, b) => new Date(b.date) - new Date(a.date));
-      
-      return sortedData.map(bill => row(bill)).join("");
-    } else {
-      return "";
-    }
+const rows = (data) => {
+  console.log('Data received in BillsUI:', data); // Debug log
+  if (data && data.length) {
+    return data.map(bill => row(bill)).join("");
+  }
+  return "";
+};
+
+// Add this function to parse dates correctly
+export const parseDate = (dateString) => {
+  const [day, month, year] = dateString.split(' ');
+  const monthMap = {
+    'Jan.': 0, 'Fév.': 1, 'Mar.': 2, 'Avr.': 3, 'Mai.': 4, 'Juin': 5,
+    'Juil.': 6, 'Aoû.': 7, 'Sep.': 8, 'Oct.': 9, 'Nov.': 10, 'Déc.': 11
   };
-  
+  let fullYear = parseInt(year) + 2000;
+  if (fullYear > new Date().getFullYear()) {
+    fullYear -= 100;
+  }
+  return new Date(parseInt(day), fullYear, monthMap[month]);
+};
+
 export default ({ data: bills, loading, error }) => {
-  
+
   const modal = () => (`
     <div class="modal fade" id="modaleFile" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
@@ -54,7 +65,7 @@ export default ({ data: bills, loading, error }) => {
   } else if (error) {
     return ErrorPage(error)
   }
-  
+
   return (`
     <div class='layout'>
       ${VerticalLayout(120)}

@@ -72,9 +72,11 @@ export default class {
     this.document = document
     this.onNavigate = onNavigate
     this.store = store
-    $('#arrow-icon1').click((e) => this.handleShowTickets(e, bills, 1))
-    $('#arrow-icon2').click((e) => this.handleShowTickets(e, bills, 2))
-    $('#arrow-icon3').click((e) => this.handleShowTickets(e, bills, 3))
+    // Bind click event listeners for the arrow icons for each status list
+    $('#arrow-icon1').on('click', (e) => this.handleShowTickets(e, bills, 1));
+    $('#arrow-icon2').on('click', (e) => this.handleShowTickets(e, bills, 2));
+    $('#arrow-icon3').on('click', (e) => this.handleShowTickets(e, bills, 3));
+
     new Logout({ localStorage, onNavigate })
   }
 
@@ -131,27 +133,27 @@ export default class {
   }
 
   handleShowTickets(e, bills, index) {
-    if (this.counter === undefined || this.index !== index) this.counter = 0
-    if (this.index === undefined || this.index !== index) this.index = index
-    if (this.counter % 2 === 0) {
-      $(`#arrow-icon${this.index}`).css({ transform: 'rotate(0deg)'})
-      $(`#status-bills-container${this.index}`)
-        .html(cards(filteredBills(bills, getStatus(this.index))))
-      this.counter ++
+    // Toggle arrow icon rotation
+    const arrowIcon = $(`#arrow-icon${index}`);
+    const statusBillsContainer = $(`#status-bills-container${index}`);
+
+    const isExpanded = arrowIcon.css('transform') === 'rotate(0deg)';
+    arrowIcon.css({ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' });
+
+    if (isExpanded) {
+      statusBillsContainer.html(""); // Collapse the list
     } else {
-      $(`#arrow-icon${this.index}`).css({ transform: 'rotate(90deg)'})
-      $(`#status-bills-container${this.index}`)
-        .html("")
-      this.counter ++
+      // Populate the list with filtered bills for the given status
+      const filteredBillCards = cards(filteredBills(bills, getStatus(index)));
+      statusBillsContainer.html(filteredBillCards);
+
+      // Add click listeners for each newly rendered bill card
+      filteredBills(bills, getStatus(index)).forEach(bill => {
+        $(`#open-bill${bill.id}`).off('click').on('click', (e) => this.handleEditTicket(e, bill, bills));
+      });
     }
-
-    bills.forEach(bill => {
-      $(`#open-bill${bill.id}`).click((e) => this.handleEditTicket(e, bill, bills))
-    })
-
-    return bills
-
   }
+  
 
   getBillsAllUsers = () => {
     if (this.store) {

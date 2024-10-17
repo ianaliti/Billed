@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-import { screen, fireEvent } from "@testing-library/dom"
+import { waitFor, screen, fireEvent } from "@testing-library/dom"
 import NewBillUI from "../views/NewBillUI.js"
 import NewBill from "../containers/NewBill.js"
 import { ROUTES } from "../constants/routes.js"
@@ -12,6 +12,15 @@ import mockStore from "../__mocks__/store.js"
 
 describe("Given I am connected as an employee", () => {
 
+  beforeEach(() => {
+    Object.defineProperty(window, 'localStorage', { value: localStorageMock });
+    window.localStorage.setItem('user', JSON.stringify({
+      type: 'Employee',
+      email: 'employee@test.com'
+    }));
+    document.body.innerHTML = NewBillUI();
+  });
+
   describe("When I am on NewBill Page", () => {
     test("Then it should render the new form bill", () => {
       const html = NewBillUI()
@@ -20,34 +29,113 @@ describe("Given I am connected as an employee", () => {
       expect(screen.getByTestId('form-new-bill')).toBeTruthy()
     });
 
-    test("Then all fields in the form should be visible", () => {
+    test("Then I should be able to upload a valid file", async () => {
+      const onNavigate = jest.fn();
+      document.body.innerHTML = NewBillUI();
+      const newBill = new NewBill({ document, onNavigate, store: mockStore, localStorage: localStorage });
+
+      const fileInput = screen.getByTestId("file");
+      const validFile = new File(["file content"], "test.png", { type: "image/png" });
+
+      fireEvent.change(fileInput, {
+        target: { files: [validFile] },
+      });
+
+      expect(fileInput.files[0].name).toBe("test.png");
+    });
+
+    test("Then it should show an error when uploading an invalid file format", async () => {
+      document.body.innerHTML = NewBillUI();
+      const onNavigate = jest.fn();
+      global.alert = jest.fn();  // Mocking the alert function
+    
+      const newBill = new NewBill({ document, onNavigate, store: mockStore, localStorage: localStorage });
+    
+      const fileInput = screen.getByTestId("file");
+      const invalidFile = new File(["content"], "test.pdf", { type: "application/pdf" });
+    
+      fireEvent.change(fileInput, {
+        target: { files: [invalidFile] },
+      });
+
+      expect(fileInput.value).toBe('');
+      expect(global.alert).toHaveBeenCalledTimes(1);  // Fix the times issue here
+    });
+  })
+
+  describe("When I fill out the new bill form", () => {
+    const html = NewBillUI()
+    document.body.innerHTML = html;
+
+    test("Then a new bill should be created with valid data", async () => {
       const html = NewBillUI();
       document.body.innerHTML = html;
+      const onNavigate = jest.fn();
 
+      const updateMock = jest.fn(() => Promise.resolve({}))
+      mockStore.bills = jest.fn(() => ({
+        update: updateMock
+      }));
 
-      expect(screen.getByTestId('expense-name')).toBeTruthy();
+      const newBill = new NewBill({ document, onNavigate, store: mockStore, localStorage: window.localStorage });
 
-      const expenseType = screen.getByTestId("expense-type")
-      fireEvent.change(expenseType, { target: { value: "Transports" } })
-      expect(expenseType.value).toBe("Transports")
+      // Fill in the form with valid data
+      fireEvent.change(screen.getByTestId("expense-type"), { target: { value: "Transports" } });
+      fireEvent.change(screen.getByTestId("datepicker"), { target: { value: "2023-04-15" } });
+      fireEvent.change(screen.getByTestId("amount"), { target: { value: "100" } });
+      fireEvent.change(screen.getByTestId("vat"), { target: { value: "20" } });
+      fireEvent.change(screen.getByTestId("pct"), { target: { value: "20" } });
 
-      const datePicker = screen.getByTestId("datepicker")
-      fireEvent.change(datePicker, { target: { value: "2023-04-15" } })
-      expect(datePicker.value).toBe("2023-04-15")
+      // Mock a valid file upload
+      const validFile = new File(["file content"], "test.png", { type: "image/png" });
+      fireEvent.change(screen.getByTestId("file"), { target: { files: [validFile] } });
 
-      const amount = screen.getByTestId("amount")
-      fireEvent.change(amount, { target: { value: "100" } })
-      expect(amount.value).toBe("100")
+      // Submit the form
+      const form = screen.getByTestId("form-new-bill");
+      const handleSubmit = jest.fn(newBill.handleSubmit);
+      form.addEventListener("submit", handleSubmit);
+      fireEvent.submit(form);
 
-      const file = screen.getByTestId("file")
-      const testFile = new File(['test'], 'test.png', { type: 'image/png' })
-      fireEvent.change(file, { target: { files: [testFile] } })
-      expect(file.files[0].name).toBe("test.png")
-
-      expect(screen.getByTestId('vat')).toBeTruthy();
-      expect(screen.getByTestId('pct')).toBeTruthy();
-      expect(screen.getByTestId('commentary')).toBeTruthy();
-      expect(screen.getByText("Envoyer")).toBeTruthy();
+      await waitFor(() => {
+        expect(handleSubmit).toHaveBeenCalled();
+        expect(mockStore.bills().update).toHaveBeenCalled();
+      });
     });
+  })
+
+  describe("When I submit the form with valid data", () => {
+    test("Then a new bill should be created", async () => {
+      const html = NewBillUI()
+      document.body.innerHTML = html
+      const updateMock = jest.fn().mockResolvedValue({});
+
+      mockStore.bills.mockImplementationOnce(() => {
+        return {
+          update: updateMock, 
+        };
+      });
+
+      const onNavigate = (pathname) => {
+        document.body.innerHTML = ROUTES({ pathname })
+      }
+
+      const newBill = new NewBill({
+        document,
+        onNavigate,
+        store: mockStore,
+        localStorage: window.localStorage
+      })
+
+      const form = screen.getByTestId("form-new-bill")
+      const handleSubmit = jest.fn(newBill.handleSubmit)
+      form.addEventListener("submit", handleSubmit)
+
+      fireEvent.submit(form)
+
+      await waitFor(() => {
+        expect(handleSubmit).toHaveBeenCalled()
+        expect(updateMock).toHaveBeenCalled()
+      })
+    })
   })
 })

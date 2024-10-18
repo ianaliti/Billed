@@ -47,19 +47,19 @@ describe("Given I am connected as an employee", () => {
     test("Then it should show an error when uploading an invalid file format", async () => {
       document.body.innerHTML = NewBillUI();
       const onNavigate = jest.fn();
-      global.alert = jest.fn();  // Mocking the alert function
-    
+      global.alert = jest.fn();  
+
       const newBill = new NewBill({ document, onNavigate, store: mockStore, localStorage: localStorage });
-    
+
       const fileInput = screen.getByTestId("file");
       const invalidFile = new File(["content"], "test.pdf", { type: "application/pdf" });
-    
+
       fireEvent.change(fileInput, {
         target: { files: [invalidFile] },
       });
 
       expect(fileInput.value).toBe('');
-      expect(global.alert).toHaveBeenCalledTimes(1);  // Fix the times issue here
+      expect(global.alert).toHaveBeenCalledTimes(1);
     });
   })
 
@@ -101,6 +101,40 @@ describe("Given I am connected as an employee", () => {
         expect(mockStore.bills().update).toHaveBeenCalled();
       });
     });
+
+    test("Then it should handle errors during form submission", async () => {
+      const onNavigate = jest.fn();
+      console.error = jest.fn(); // Mock console.error
+
+      mockStore.bills.mockImplementationOnce(() => ({
+        update: jest.fn().mockRejectedValue(new Error("Form submission failed"))
+      }));
+
+      const newBill = new NewBill({ document, onNavigate, store: mockStore, localStorage: window.localStorage });
+
+      // Fill in the form with valid data
+      fireEvent.change(screen.getByTestId("expense-type"), { target: { value: "Transports" } });
+      fireEvent.change(screen.getByTestId("datepicker"), { target: { value: "2023-04-15" } });
+      fireEvent.change(screen.getByTestId("amount"), { target: { value: "100" } });
+      fireEvent.change(screen.getByTestId("vat"), { target: { value: "20" } });
+      fireEvent.change(screen.getByTestId("pct"), { target: { value: "20" } });
+
+      // Mock a valid file upload
+      const validFile = new File(["file content"], "test.png", { type: "image/png" });
+      fireEvent.change(screen.getByTestId("file"), { target: { files: [validFile] } });
+
+      // Submit the form
+      const form = screen.getByTestId("form-new-bill");
+      fireEvent.submit(form);
+
+      await waitFor(() => {
+        expect(mockStore.bills().update).toHaveBeenCalled();
+      });
+
+      await waitFor(() => {
+        expect(console.error).toHaveBeenCalledWith(new Error("Form submission failed"));
+      });
+    });
   })
 
   describe("When I submit the form with valid data", () => {
@@ -111,7 +145,7 @@ describe("Given I am connected as an employee", () => {
 
       mockStore.bills.mockImplementationOnce(() => {
         return {
-          update: updateMock, 
+          update: updateMock,
         };
       });
 

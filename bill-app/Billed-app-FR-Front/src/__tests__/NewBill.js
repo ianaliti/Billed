@@ -28,38 +28,62 @@ describe("Given I am connected as an employee", () => {
 
       expect(screen.getByTestId('form-new-bill')).toBeTruthy()
     });
+  })
 
+  describe("When I select a file", () => {
     test("Then I should be able to upload a valid file", async () => {
-      const onNavigate = jest.fn();
-      document.body.innerHTML = NewBillUI();
-      const newBill = new NewBill({ document, onNavigate, store: mockStore, localStorage: localStorage });
+      const onNavigate = (pathname) => {
+        document.body.innerHTML = ROUTES({ pathname })
+      };
 
+      const newBill = new NewBill({
+        document,
+        onNavigate,
+        store: mockStore,
+        localStorage: window.localStorage
+      });
+
+      const handleChangeFile = jest.fn(newBill.handleChangeFile)
       const fileInput = screen.getByTestId("file");
+      fileInput.addEventListener("change", handleChangeFile)
+
       const validFile = new File(["file content"], "test.png", { type: "image/png" });
 
       fireEvent.change(fileInput, {
         target: { files: [validFile] },
       });
 
+      expect(handleChangeFile).toHaveBeenCalled();
       expect(fileInput.files[0].name).toBe("test.png");
     });
 
     test("Then it should show an error when uploading an invalid file format", async () => {
-      document.body.innerHTML = NewBillUI();
-      const onNavigate = jest.fn();
-      global.alert = jest.fn();  
+      const onNavigate = (pathname) => {
+        document.body.innerHTML = ROUTES({ pathname })
+      };
+      global.alert = jest.fn();
 
-      const newBill = new NewBill({ document, onNavigate, store: mockStore, localStorage: localStorage });
+      const newBill = new NewBill({ 
+        document, 
+        onNavigate, 
+        store: mockStore, 
+        localStorage: window.localStorage 
+      });
 
+      const handleChangeFile = jest.fn(newBill.handleChangeFile)
       const fileInput = screen.getByTestId("file");
-      const invalidFile = new File(["content"], "test.pdf", { type: "application/pdf" });
+      fileInput.addEventListener("change", handleChangeFile)
+
+      window.alert = jest.fn()
+      const invalidFile = new File(["file.pdf"], "test.pdf", { type: "image/pdf" });
 
       fireEvent.change(fileInput, {
         target: { files: [invalidFile] },
       });
 
+      expect(handleChangeFile).toHaveBeenCalled()
       expect(fileInput.value).toBe('');
-      expect(global.alert).toHaveBeenCalledTimes(1);
+      expect(global.alert).toHaveBeenCalledWith("Le fichier doit être une image au format jpg, jpeg ou png");
     });
   })
 
@@ -86,10 +110,6 @@ describe("Given I am connected as an employee", () => {
       fireEvent.change(screen.getByTestId("vat"), { target: { value: "20" } });
       fireEvent.change(screen.getByTestId("pct"), { target: { value: "20" } });
 
-      // Mock a valid file upload
-      const validFile = new File(["file content"], "test.png", { type: "image/png" });
-      fireEvent.change(screen.getByTestId("file"), { target: { files: [validFile] } });
-
       // Submit the form
       const form = screen.getByTestId("form-new-bill");
       const handleSubmit = jest.fn(newBill.handleSubmit);
@@ -104,7 +124,7 @@ describe("Given I am connected as an employee", () => {
 
     test("Then it should handle errors during form submission", async () => {
       const onNavigate = jest.fn();
-      console.error = jest.fn(); // Mock console.error
+      console.error = jest.fn(); 
 
       mockStore.bills.mockImplementationOnce(() => ({
         update: jest.fn().mockRejectedValue(new Error("Form submission failed"))
@@ -118,10 +138,6 @@ describe("Given I am connected as an employee", () => {
       fireEvent.change(screen.getByTestId("amount"), { target: { value: "100" } });
       fireEvent.change(screen.getByTestId("vat"), { target: { value: "20" } });
       fireEvent.change(screen.getByTestId("pct"), { target: { value: "20" } });
-
-      // Mock a valid file upload
-      const validFile = new File(["file content"], "test.png", { type: "image/png" });
-      fireEvent.change(screen.getByTestId("file"), { target: { files: [validFile] } });
 
       // Submit the form
       const form = screen.getByTestId("form-new-bill");

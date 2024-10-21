@@ -6,6 +6,11 @@ export default class NewBill {
     this.document = document
     this.onNavigate = onNavigate
     this.store = store
+    this.localStorage = localStorage
+
+    this.handleChangeFile = this.handleChangeFile.bind(this)
+    this.handleSubmit = this.handleSubmit.bind(this)
+
     const formNewBill = this.document.querySelector(`form[data-testid="form-new-bill"]`)
     formNewBill.addEventListener("submit", this.handleSubmit)
     const file = this.document.querySelector(`input[data-testid="file"]`)
@@ -53,7 +58,9 @@ export default class NewBill {
         this.billId = key
         this.fileUrl = fileUrl
         this.fileName = fileName
-      }).catch(error => console.error(error))
+      })
+      .catch(error => console.error(error))
+      this.document.querySelector('input[data-testid="file').value = ''
   }
   
   handleSubmit = e => {

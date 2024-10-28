@@ -81,7 +81,7 @@ describe("Given that I am a user on login page", () => {
       const onNavigate = (pathname) => {
         document.body.innerHTML = ROUTES({ pathname });
       };
-
+5
       let PREVIOUS_LOCATION = "";
 
       const store = jest.fn();

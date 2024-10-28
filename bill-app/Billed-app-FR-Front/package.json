@@ -1,8 +1,9 @@
 {
   "scripts": {
-    "test": "jest --coverage --noStackTrace --silent"
+    "test": "jest --coverage --noStackTrace"
   },
   "jest": {
+    "setupFilesAfterEnv": ["<rootDir>/setup-jest.js"],
     "verbose": false,
     "setupFiles": [
       "./setup-jest.js"

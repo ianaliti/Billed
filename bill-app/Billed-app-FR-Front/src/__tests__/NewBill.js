@@ -7,7 +7,7 @@ import NewBillUI from "../views/NewBillUI.js"
 import NewBill from "../containers/NewBill.js"
 import { ROUTES, ROUTES_PATH } from "../constants/routes.js"
 import { localStorageMock } from "../__mocks__/localStorage.js"
-import mockStore from "../__mocks__/store.js"
+import mockStore from "../__mocks__/store"
 
 
 describe("Given I am connected as an employee", () => {
@@ -31,32 +31,18 @@ describe("Given I am connected as an employee", () => {
 
   describe("When I am on NewBill Page", () => {
     test("Then it should render the new form bill", () => {
-      const html = NewBillUI()
-      document.body.innerHTML = html
-
       expect(screen.getByTestId('form-new-bill')).toBeTruthy()
     });
   })
 
   describe("When I select a file", () => {
     test("Then I should be able to upload a valid file", async () => {
-      const onNavigate = (pathname) => {
-        document.body.innerHTML = ROUTES({ pathname })
-      };
-
-      const newBill = new NewBill({
-        document,
-        onNavigate,
-        store: mockStore,
-        localStorage: window.localStorage
-      });
 
       const handleChangeFile = jest.fn(newBill.handleChangeFile)
       const fileInput = screen.getByTestId("file");
       fileInput.addEventListener("change", handleChangeFile)
 
       const validFile = new File(["file content"], "test.png", { type: "image/png" });
-
       fireEvent.change(fileInput, {
         target: { files: [validFile] },
       });
@@ -66,23 +52,11 @@ describe("Given I am connected as an employee", () => {
     });
 
     test("Then it should show an error when uploading an invalid file format", async () => {
-      const onNavigate = (pathname) => {
-        document.body.innerHTML = ROUTES({ pathname })
-      };
       global.alert = jest.fn();
-
-      const newBill = new NewBill({
-        document,
-        onNavigate,
-        store: mockStore,
-        localStorage: window.localStorage
-      });
 
       const handleChangeFile = jest.fn(newBill.handleChangeFile)
       const fileInput = screen.getByTestId("file");
       fileInput.addEventListener("change", handleChangeFile)
-
-      window.alert = jest.fn()
       const invalidFile = new File(["file.pdf"], "test.pdf", { type: "image/pdf" });
 
       fireEvent.change(fileInput, {
@@ -93,7 +67,8 @@ describe("Given I am connected as an employee", () => {
       expect(fileInput.value).toBe('');
       expect(global.alert).toHaveBeenCalledWith("Le fichier doit être une image au format jpg, jpeg ou png");
     });
-  })
+  });
+  
   describe("When I handle file change", () => {
     test("Then it should create a file with correct data", async () => {
       const mockCreateRequest = jest.fn().mockResolvedValue({
@@ -299,4 +274,101 @@ describe("Given I am connected as an employee", () => {
       console.error.mockRestore()
     })
   })
+
+  describe("When I submit the form to create a new bill", () => {
+    test("Then a new bill should be posted to the API and added successfully", async () => {
+      // Mock API POST request with a successful response
+      const updateMock = jest.fn().mockResolvedValue({ 
+        fileUrl: 'http://localhost:3456/images/test.jpg',
+        key: '1234',
+      });
+  
+      // Setting up mockStore to use the createMock function for the bills
+      mockStore.bills.mockImplementationOnce(() => ({
+        update: updateMock
+      }));
+  
+      // Prepare navigation and component setup
+      const onNavigate = jest.fn();
+      const newBill = new NewBill({
+        document,
+        onNavigate,
+        store: mockStore,
+        localStorage: window.localStorage
+      });
+  
+      // Fill in the form with valid data
+      fireEvent.change(screen.getByTestId("expense-type"), { target: { value: "Transports" } });
+      fireEvent.change(screen.getByTestId("expense-name"), { target: { value: "Taxi to airport" } });
+      fireEvent.change(screen.getByTestId("datepicker"), { target: { value: "2023-10-20" } });
+      fireEvent.change(screen.getByTestId("amount"), { target: { value: "120" } });
+      fireEvent.change(screen.getByTestId("vat"), { target: { value: "10" } });
+      fireEvent.change(screen.getByTestId("pct"), { target: { value: "20" } });
+      fireEvent.change(screen.getByTestId("commentary"), { target: { value: "Business trip" } });
+  
+      // Simulate file selection and change event
+      const fileInput = screen.getByTestId("file");
+      const validFile = new File(["file content"], "test.jpg", { type: "image/jpeg" });
+      fireEvent.change(fileInput, { target: { files: [validFile] } });
+  
+      // Submit the form
+      const form = screen.getByTestId("form-new-bill");
+      const handleSubmit = jest.fn(newBill.handleSubmit);
+      form.addEventListener("submit", handleSubmit);
+      fireEvent.submit(form);
+  
+      // Check that the API call was made
+      await waitFor(() => {
+        expect(handleSubmit).toHaveBeenCalled();
+        expect(updateMock).toHaveBeenCalled();
+      });
+  
+      // Check navigation after form submission
+      expect(onNavigate).toHaveBeenCalledWith(ROUTES_PATH['Bills']);
+    });
+  
+    test("Then it should handle errors when the API POST request fails", async () => {
+      // Mock a failing POST request
+      const updateMock = jest.fn().mockRejectedValue(new Error("API POST error"));
+      mockStore.bills.mockImplementationOnce(() => ({
+        update: updateMock
+      }));
+  
+      // Prepare navigation and component setup
+      const onNavigate = jest.fn();
+      const newBill = new NewBill({
+        document,
+        onNavigate,
+        store: mockStore,
+        localStorage: window.localStorage
+      });
+  
+      // Fill in the form with valid data
+      fireEvent.change(screen.getByTestId("expense-type"), { target: { value: "Transports" } });
+      fireEvent.change(screen.getByTestId("expense-name"), { target: { value: "Taxi to airport" } });
+      fireEvent.change(screen.getByTestId("datepicker"), { target: { value: "2023-10-20" } });
+      fireEvent.change(screen.getByTestId("amount"), { target: { value: "120" } });
+      fireEvent.change(screen.getByTestId("vat"), { target: { value: "10" } });
+      fireEvent.change(screen.getByTestId("pct"), { target: { value: "20" } });
+      fireEvent.change(screen.getByTestId("commentary"), { target: { value: "Business trip" } });
+  
+      // Simulate file selection and change event
+      const fileInput = screen.getByTestId("file");
+      const validFile = new File(["file content"], "test.jpg", { type: "image/jpeg" });
+      fireEvent.change(fileInput, { target: { files: [validFile] } });
+  
+      // Submit the form
+      const form = screen.getByTestId("form-new-bill");
+      const handleSubmit = jest.fn(newBill.handleSubmit);
+      form.addEventListener("submit", handleSubmit);
+      fireEvent.submit(form);
+  
+      // Assert that an error was logged to the console
+      await waitFor(() => {
+        expect(handleSubmit).toHaveBeenCalled();
+        expect(updateMock).toHaveBeenCalled();
+        expect(console.error).toHaveBeenCalledWith(new Error("API POST error"));
+      });
+    });
+  });
 })

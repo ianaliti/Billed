@@ -43,40 +43,59 @@ describe("Given I am connected as an employee", () => {
   });
 
   describe("When I am on Bills Page", () => {
-    // Test for the icon highlight
-    test("Then bill icon in vertical layout should be highlighted", async () => {
-      const root = document.createElement("div");
-      root.setAttribute("id", "root");
-      document.body.append(root);
-      router();
-      window.onNavigate(ROUTES_PATH.Bills);
-      await waitFor(() => screen.getByTestId("icon-window"));
-      const windowIcon = screen.getByTestId("icon-window");
-      expect(windowIcon.classList.contains("active-icon")).toBe(true);
-    });
 
-    // Test for bill sorting
-    test("Then bills should be ordered from earliest to latest", () => {
-      document.body.innerHTML = BillsUI({ data: bills });
+    describe("When page is loaded", () => {
+      test("Then bill icon in vertical layout should be highlighted", async () => {
+        const root = document.createElement("div");
+        root.setAttribute("id", "root");
+        document.body.append(root);
+        router();
+        window.onNavigate(ROUTES_PATH.Bills);
+        await waitFor(() => screen.getByTestId("icon-window"));
+        const windowIcon = screen.getByTestId("icon-window");
+        expect(windowIcon.classList.contains("active-icon")).toBe(true);
+      });
+    })
 
-      // Select all date elements by their test ID           
-      const dateElements = screen.getAllByTestId("bill-date");
+    describe("When page is loading", () => {
+      test("Then, Loading page should be rendered", () => {
+        const html = BillsUI({ loading: true })
+        document.body.innerHTML = html
+        expect(screen.getAllByText('Loading...')).toBeTruthy()
+      })
+    })
 
-      // Extract the innerText of each date element       
-      const dates = dateElements.map((el) => el.innerHTML);
-
-      // Parse the displayed dates into Date objects for comparison       
-      const parsedDates = dates.map((date) => new Date(date));
-
-      // Create a sorted version of the parsed dates (from earliest to latest)       
-      const sortedDates = [...parsedDates].sort((a, b) => a - b);
-
-      // Check if the parsed dates match the sorted version       
-      expect(parsedDates).toEqual(sortedDates);
-    });
+    describe("When an error occurs", () => {
+      test("Then, Error page should be rendered", () => {
+        const html = BillsUI({ error: 'Some error message' })
+        document.body.innerHTML = html
+        expect(screen.getAllByText('Erreur')).toBeTruthy()
+      })
+    })
+    
+    describe("When bills are displayed", () => {
+      test("Then bills should be ordered from earliest to latest", () => {
+        document.body.innerHTML = BillsUI({ data: bills });
+  
+        // Select all date elements by their test ID           
+        const dateElements = screen.getAllByTestId("bill-date");
+  
+        // Extract the innerText of each date element       
+        const dates = dateElements.map((el) => el.innerHTML);
+  
+        // Parse the displayed dates into Date objects for comparison       
+        const parsedDates = dates.map((date) => new Date(date));
+  
+        // Create a sorted version of the parsed dates (from earliest to latest)       
+        const sortedDates = [...parsedDates].sort((a, b) => a - b);
+  
+        // Check if the parsed dates match the sorted version       
+        expect(parsedDates).toEqual(sortedDates);
+      });
+    })
 
     test("Then the newBill button and eye icons should have event listeners", () => {
-      
+
       Object.defineProperty(window, 'localStorage', { value: localStorageMock })
       window.localStorage.setItem('user', JSON.stringify({
         type: 'Employee'

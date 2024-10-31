@@ -137,15 +137,18 @@ export default class {
     const arrowIcon = $(`#arrow-icon${index}`);
     const statusBillsContainer = $(`#status-bills-container${index}`);
 
-    const isExpanded = arrowIcon.css('transform') === 'rotate(0deg)';
+    // Check if the list is currently expanded by checking its visibility
+    const isExpanded = statusBillsContainer.is(':visible');
+
     arrowIcon.css({ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' });
 
     if (isExpanded) {
-      statusBillsContainer.html(""); // Collapse the list
+      // If expanded, collapse the list by emptying and hiding it
+      statusBillsContainer.html("").hide(); // Collapse the list
     } else {
       // Populate the list with filtered bills for the given status
       const filteredBillCards = cards(filteredBills(bills, getStatus(index)));
-      statusBillsContainer.html(filteredBillCards);
+      statusBillsContainer.html(filteredBillCards).show();
 
       // Add click listeners for each newly rendered bill card
       filteredBills(bills, getStatus(index)).forEach(bill => {

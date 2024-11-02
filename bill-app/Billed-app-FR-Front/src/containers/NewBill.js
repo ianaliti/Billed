@@ -58,8 +58,8 @@ export default class NewBill {
     } catch (error) {
       console.error('Error uploading file:', error)
       alert('Une erreur est survenue lors du téléchargement du fichier')
-      fileInput.value = ''
     }
+    fileInput.value = ''
   }
 
 
@@ -96,4 +96,4 @@ export default class NewBill {
         .catch(error => console.error(error))
     }
   }
-}
+} 

@@ -2,9 +2,9 @@
  * @jest-environment jsdom
  */
 
-import mockStore from "../__mocks__/store";
+import mockStore from "../../__mocks__/store.js";
 
-jest.mock("../app/store", () => {
+jest.mock("../../app/store", () => {
   return {
     __esModule: true,
     default: mockStore
@@ -13,13 +13,13 @@ jest.mock("../app/store", () => {
 
 import { screen, waitFor, fireEvent } from "@testing-library/dom";
 import userEvent from "@testing-library/user-event";
-import BillsUI from "../views/BillsUI.js";
-import Bills from "../containers/Bills.js";
-import { bills } from "../fixtures/bills.js"
-import { ROUTES_PATH } from "../constants/routes.js";
-import { localStorageMock } from "../__mocks__/localStorage.js";
-import router from "../app/Router.js";
-import { ROUTES } from "../constants/routes.js";
+import BillsUI from "../../views/BillsUI.js";
+import Bills from "../../containers/Bills.js";
+import { bills } from "../../fixtures/bills.js"
+import { ROUTES_PATH } from "../../constants/routes.js";
+import { localStorageMock } from "../../__mocks__/localStorage.js";
+import router from "../../app/Router.js";
+import { ROUTES } from "../../constants/routes.js";
 
 // Mock jquery and bootstrap modal
 global.$ = jest.fn(() => ({

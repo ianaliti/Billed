@@ -3,7 +3,7 @@
  */
 
 import { screen } from "@testing-library/dom"
-import ErrorPage from "../views/ErrorPage.js"
+import ErrorPage from "../../views/ErrorPage.js"
 
 describe('Given I am connected on app (as an Employee or an HR admin)', () => {
   describe('When ErrorPage is called without and error in its signature', () => {

@@ -3,17 +3,20 @@
  */
 
 import { waitFor, screen, fireEvent } from "@testing-library/dom"
-import NewBillUI from "../views/NewBillUI.js"
-import NewBill from "../containers/NewBill.js"
-import { ROUTES, ROUTES_PATH } from "../constants/routes.js"
-import { localStorageMock } from "../__mocks__/localStorage.js"
-import mockStore from "../__mocks__/store"
+import NewBillUI from "../../views/NewBillUI.js"
+import NewBill from "../../containers/NewBill.js"
+import { ROUTES, ROUTES_PATH } from "../../constants/routes.js"
+import { localStorageMock } from "../../__mocks__/localStorage.js"
+import mockStore from "../../__mocks__/store"
 
 
 describe("Given I am connected as an employee", () => {
   let newBill;
 
   beforeEach(() => {
+    // Mock window.alert before any tests run
+    global.alert = jest.fn();
+
     Object.defineProperty(window, 'localStorage', { value: localStorageMock });
     window.localStorage.setItem('user', JSON.stringify({
       type: 'Employee',
@@ -27,6 +30,12 @@ describe("Given I am connected as an employee", () => {
       store: mockStore,
       localStorage: window.localStorage
     });
+  });
+
+  afterEach(() => {
+    // Clean up mocks after each test
+    jest.clearAllMocks();
+    document.body.innerHTML = '';
   });
 
   describe("When I am on NewBill Page", () => {
@@ -71,15 +80,15 @@ describe("Given I am connected as an employee", () => {
   
   describe("When I handle file change", () => {
     test("Then it should create a file with correct data", async () => {
-      const mockCreateRequest = jest.fn().mockResolvedValue({
+      const expectedResponse = {
         fileUrl: 'http://localhost:3456/images/test.jpg',
-        key: '1234',
-      });
-  
-      // Mocking the store's bills.create method
+        key: '1234'
+      };
+
+      // Create a mock store with the expected response
       const mockStore = {
-        bills: jest.fn().mockReturnValue({
-          create: mockCreateRequest,
+        bills: () => ({
+          create: jest.fn().mockResolvedValue(expectedResponse)
         })
       };
   
@@ -90,28 +99,31 @@ describe("Given I am connected as an employee", () => {
         localStorage: window.localStorage
       });
   
-      // Spy on console.log
-      jest.spyOn(console, 'log');
-  
       const fileInput = screen.getByTestId("file");
-  
-      // Create a new file
       const file = new File(['file content'], 'test.jpg', { type: 'image/jpeg' });
+
+      // Spy on console.log
+      const consoleSpy = jest.spyOn(console, 'error');
   
-      // Fire the change event with a new file
-      await newBill.handleChangeFile({
+      // Trigger file change event
+      const event = {
         preventDefault: jest.fn(),
-        target: { value: 'C:\\fakepath\\test.jpg', files: [file] },
-      });
+        target: {
+          value: 'C:\\fakepath\\test.jpg',
+          files: [file]
+        }
+      };
+
+      await newBill.handleChangeFile(event)
   
-      // Check if the mock function was called
-      expect(mockCreateRequest).toHaveBeenCalled();
-  
-      // Check if console.log was called with the correct URL
-      expect(console.log).toHaveBeenCalledWith('http://localhost:3456/images/test.jpg');
-  
-      // Check if the file properties are set correctly
+      // Assertions
+      expect(newBill.billId).toBe(expectedResponse.key);
+      expect(newBill.fileUrl).toBe(expectedResponse.fileUrl);
       expect(newBill.fileName).toBe('test.jpg');
+      expect(consoleSpy).not.toHaveBeenCalled();
+
+      // Cleanup
+      consoleSpy.mockRestore();
     });
   });
 

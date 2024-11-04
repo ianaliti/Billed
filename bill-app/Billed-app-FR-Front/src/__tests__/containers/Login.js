@@ -81,7 +81,7 @@ describe("Given that I am a user on login page", () => {
       const onNavigate = (pathname) => {
         document.body.innerHTML = ROUTES({ pathname });
       };
-5
+
       let PREVIOUS_LOCATION = "";
 
       const store = jest.fn();
@@ -225,6 +225,71 @@ describe("Given that I am a user on login page", () => {
 
     test("It should renders HR dashboard page", () => {
       expect(screen.queryByText("Validations")).toBeTruthy();
+    });
+  });
+  describe("When the background color needs to be updated", () => {
+    beforeEach(() => {
+      document.body.innerHTML = LoginUI();
+    });
+
+    test("Then it should change the background color to white for employee login", async () => {
+      const onNavigate = jest.fn();
+      const store = {
+        login: jest.fn().mockResolvedValue({ jwt: 'token' }),
+      };
+
+      const login = new Login({
+        document,
+        localStorage: window.localStorage,
+        onNavigate,
+        PREVIOUS_LOCATION: '',
+        store,
+      });
+
+      const form = screen.getByTestId("form-employee");
+      const emailInput = screen.getByTestId("employee-email-input");
+      const passwordInput = screen.getByTestId("employee-password-input");
+
+      fireEvent.change(emailInput, { target: { value: "employee@test.com" } });
+      fireEvent.change(passwordInput, { target: { value: "password123" } });
+
+      await login.handleSubmitEmployee({
+        preventDefault: jest.fn(),
+        target: form
+      });
+
+      // Check for either #fff or rgb(255, 255, 255)
+      expect(document.body.style.backgroundColor).toMatch(/^(#fff|rgb\(255,\s*255,\s*255\))$/);
+    });
+
+    test("Then it should change the background color to white for admin login", async () => {
+      const onNavigate = jest.fn();
+      const store = {
+        login: jest.fn().mockResolvedValue({ jwt: 'token' }),
+      };
+
+      const login = new Login({
+        document,
+        localStorage: window.localStorage,
+        onNavigate,
+        PREVIOUS_LOCATION: '',
+        store,
+      });
+
+      const form = screen.getByTestId("form-admin");
+      const emailInput = screen.getByTestId("admin-email-input");
+      const passwordInput = screen.getByTestId("admin-password-input");
+
+      fireEvent.change(emailInput, { target: { value: "admin@test.com" } });
+      fireEvent.change(passwordInput, { target: { value: "password123" } });
+
+      await login.handleSubmitAdmin({
+        preventDefault: jest.fn(),
+        target: form
+      });
+
+      // Check for either #fff or rgb(255, 255, 255)
+      expect(document.body.style.backgroundColor).toMatch(/^(#fff|rgb\(255,\s*255,\s*255\))$/);
     });
   });
 });

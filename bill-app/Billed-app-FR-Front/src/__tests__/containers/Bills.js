@@ -74,7 +74,7 @@ describe("Given I am connected as an employee", () => {
     })
     
     describe("When bills are displayed", () => {
-      test("Then bills should be ordered from earliest to latest", () => {
+      test("Then bills should be ordered from latest to earliest", () => {
         document.body.innerHTML = BillsUI({ data: bills });
   
         // Select all date elements by their test ID           
@@ -87,7 +87,7 @@ describe("Given I am connected as an employee", () => {
         const parsedDates = dates.map((date) => new Date(date));
   
         // Create a sorted version of the parsed dates (from earliest to latest)       
-        const sortedDates = [...parsedDates].sort((a, b) => a - b);
+        const sortedDates = [...parsedDates].sort((a, b) => b - a);
   
         // Check if the parsed dates match the sorted version       
         expect(parsedDates).toEqual(sortedDates);

@@ -17,33 +17,36 @@ describe("Given I am connected as an employee", () => {
     // Mock window.alert before any tests run
     global.alert = jest.fn();
 
+    // Mock localStorage to simulate a logged-in employee
     Object.defineProperty(window, 'localStorage', { value: localStorageMock });
     window.localStorage.setItem('user', JSON.stringify({
       type: 'Employee',
       email: 'employee@test.com'
     }));
     document.body.innerHTML = NewBillUI();
-    const onNavigate = jest.fn();
+    // Create a new instance of NewBill for testing
     newBill = new NewBill({
       document,
-      onNavigate,
+      onNavigate: jest.fn(),
       store: mockStore,
       localStorage: window.localStorage
     });
   });
 
+   // Clean up after each test
   afterEach(() => {
-    // Clean up mocks after each test
     jest.clearAllMocks();
     document.body.innerHTML = '';
   });
 
+  // Tests the basic rendering of the NewBill form component
   describe("When I am on NewBill Page", () => {
     test("Then it should render the new form bill", () => {
       expect(screen.getByTestId('form-new-bill')).toBeTruthy()
     });
   })
 
+  // Tests file input handling and validation
   describe("When I select a file", () => {
     test("Then I should be able to upload a valid file", async () => {
 
@@ -53,6 +56,7 @@ describe("Given I am connected as an employee", () => {
 
       const validFile = new File(["file content"], "test.png", { type: "image/png" });
       fireEvent.change(fileInput, {
+        // Simulate file selection
         target: { files: [validFile] },
       });
 
@@ -78,6 +82,7 @@ describe("Given I am connected as an employee", () => {
     });
   });
   
+  // Tests the handleChangeFile method
   describe("When I handle file change", () => {
     test("Then it should create a file with correct data", async () => {
       const expectedResponse = {
@@ -88,6 +93,7 @@ describe("Given I am connected as an employee", () => {
       // Create a mock store with the expected response
       const mockStore = {
         bills: () => ({
+          // Mock API response for creating a bill
           create: jest.fn().mockResolvedValue(expectedResponse)
         })
       };
@@ -102,7 +108,7 @@ describe("Given I am connected as an employee", () => {
       const fileInput = screen.getByTestId("file");
       const file = new File(['file content'], 'test.jpg', { type: 'image/jpeg' });
 
-      // Spy on console.log
+      // Spy on console.log for error logging
       const consoleSpy = jest.spyOn(console, 'error');
   
       // Trigger file change event
@@ -123,35 +129,38 @@ describe("Given I am connected as an employee", () => {
       expect(consoleSpy).not.toHaveBeenCalled();
 
       // Cleanup
-      consoleSpy.mockRestore();
+      consoleSpy.mockRestore(); // Restore the original console.error
     });
   });
 
+  // INTEGRATION TESTS
+  // Tests the integration between form submission and store
+   
   describe("When I fill out the new bill form", () => {
-    test("Then a new bill should be created with valid data", async () => {
-      const html = NewBillUI();
-      document.body.innerHTML = html;
-      const onNavigate = jest.fn();
-
-      const updateMock = jest.fn(() => Promise.resolve({}))
-      mockStore.bills = jest.fn(() => ({
-        update: updateMock
-      }));
-
-      const newBill = new NewBill({ document, onNavigate, store: mockStore, localStorage: window.localStorage });
-
-      // Fill in the form with valid data
+    
+    const fillFormWithValidData = () => {
       fireEvent.change(screen.getByTestId("expense-type"), { target: { value: "Transports" } });
       fireEvent.change(screen.getByTestId("datepicker"), { target: { value: "2023-04-15" } });
       fireEvent.change(screen.getByTestId("amount"), { target: { value: "100" } });
       fireEvent.change(screen.getByTestId("vat"), { target: { value: "20" } });
       fireEvent.change(screen.getByTestId("pct"), { target: { value: "20" } });
-      fireEvent.change(screen.getByTestId("commentary"), { target: { value: "Test Comment" } })
+      fireEvent.change(screen.getByTestId("commentary"), { target: { value: "Test Comment" } });
+    };
+
+    test("Then a new bill should be created with valid data", async () => {
+      // Mock successful update response
+      const updateMock = jest.fn(() => Promise.resolve({}))
+      mockStore.bills = jest.fn(() => ({
+        // Assign the mock update function to the store
+        update: updateMock
+      }));
 
       // Submit the form
       const form = screen.getByTestId("form-new-bill");
       const handleSubmit = jest.fn(newBill.handleSubmit);
       form.addEventListener("submit", handleSubmit);
+
+      fillFormWithValidData()
       fireEvent.submit(form);
 
       await waitFor(() => {
@@ -160,37 +169,35 @@ describe("Given I am connected as an employee", () => {
       });
     });
 
+    // Tests error handling during form submission
     test("Then it should handle errors during form submission", async () => {
       const onNavigate = jest.fn();
-      console.error = jest.fn();
+      console.error = jest.fn(); // Mock console.error for error handling
 
       mockStore.bills.mockImplementationOnce(() => ({
         update: jest.fn().mockRejectedValue(new Error("Form submission failed"))
       }));
 
-      const newBill = new NewBill({ document, onNavigate, store: mockStore, localStorage: window.localStorage });
-
-      // Fill in the form with valid data
-      fireEvent.change(screen.getByTestId("expense-type"), { target: { value: "Transports" } });
-      fireEvent.change(screen.getByTestId("datepicker"), { target: { value: "2023-04-15" } });
-      fireEvent.change(screen.getByTestId("amount"), { target: { value: "100" } });
-      fireEvent.change(screen.getByTestId("vat"), { target: { value: "20" } });
-      fireEvent.change(screen.getByTestId("pct"), { target: { value: "20" } });
+      const newBill = new NewBill({ 
+        document, 
+        onNavigate, 
+        store: mockStore, 
+        localStorage: window.localStorage 
+      });
 
       // Submit the form
+      fillFormWithValidData();
       const form = screen.getByTestId("form-new-bill");
       fireEvent.submit(form);
 
       await waitFor(() => {
         expect(mockStore.bills().update).toHaveBeenCalled();
-      });
-
-      await waitFor(() => {
         expect(console.error).toHaveBeenCalledWith(new Error("Form submission failed"));
       });
     });
   })
 
+  // Tests the complete form submission flow including navigation
   describe("When I submit the form with valid data", () => {
     test("Then it should update the bill and navigate to Bills", async () => {
       const handleSubmit = jest.fn(newBill.handleSubmit);
@@ -213,44 +220,14 @@ describe("Given I am connected as an employee", () => {
       fireEvent.submit(form);
 
       expect(handleSubmit).toHaveBeenCalled();
+
       await waitFor(() => {
         expect(mockUpdateBill).toHaveBeenCalled();
         expect(newBill.onNavigate).toHaveBeenCalledWith(ROUTES_PATH['Bills']);
       });
     })
 
-    test("Then a new bill should be created", async () => {
-      const updateMock = jest.fn().mockResolvedValue({});
-
-      mockStore.bills.mockImplementationOnce(() => {
-        return {
-          update: updateMock,
-        };
-      });
-
-      const onNavigate = (pathname) => {
-        document.body.innerHTML = ROUTES({ pathname })
-      }
-
-      const newBill = new NewBill({
-        document,
-        onNavigate,
-        store: mockStore,
-        localStorage: window.localStorage
-      })
-
-      const form = screen.getByTestId("form-new-bill")
-      const handleSubmit = jest.fn(newBill.handleSubmit)
-      form.addEventListener("submit", handleSubmit)
-
-      fireEvent.submit(form)
-
-      await waitFor(() => {
-        expect(handleSubmit).toHaveBeenCalled()
-        expect(updateMock).toHaveBeenCalled()
-      })
-    })
-
+    // Tests error handling during bill creation
     test("Then bill creation should fail on API error", async () => {
       const onNavigate = jest.fn()
       const errorMock = jest.fn().mockRejectedValue(new Error("Erreur 404"))
@@ -275,9 +252,8 @@ describe("Given I am connected as an employee", () => {
 
       fireEvent.submit(form)
 
-      expect(handleSubmit).toHaveBeenCalled()
-
       await waitFor(() => {
+        expect(handleSubmit).toHaveBeenCalled()
         expect(errorMock).toHaveBeenCalled()
         expect(console.error).toHaveBeenCalled()
       })
@@ -287,7 +263,18 @@ describe("Given I am connected as an employee", () => {
     })
   })
 
+  // Tests the complete flow from form submission to API interaction
   describe("When I submit the form to create a new bill", () => {
+
+    const fillFormWithValidData = () => {
+      fireEvent.change(screen.getByTestId("expense-type"), { target: { value: "Transports" } });
+      fireEvent.change(screen.getByTestId("datepicker"), { target: { value: "2023-04-15" } });
+      fireEvent.change(screen.getByTestId("amount"), { target: { value: "100" } });
+      fireEvent.change(screen.getByTestId("vat"), { target: { value: "20" } });
+      fireEvent.change(screen.getByTestId("pct"), { target: { value: "20" } });
+      fireEvent.change(screen.getByTestId("commentary"), { target: { value: "Test Comment" } });
+    }
+
     test("Then a new bill should be posted to the API and added successfully", async () => {
       // Mock API POST request with a successful response
       const updateMock = jest.fn().mockResolvedValue({ 
@@ -309,16 +296,8 @@ describe("Given I am connected as an employee", () => {
         localStorage: window.localStorage
       });
   
-      // Fill in the form with valid data
-      fireEvent.change(screen.getByTestId("expense-type"), { target: { value: "Transports" } });
-      fireEvent.change(screen.getByTestId("expense-name"), { target: { value: "Taxi to airport" } });
-      fireEvent.change(screen.getByTestId("datepicker"), { target: { value: "2023-10-20" } });
-      fireEvent.change(screen.getByTestId("amount"), { target: { value: "120" } });
-      fireEvent.change(screen.getByTestId("vat"), { target: { value: "10" } });
-      fireEvent.change(screen.getByTestId("pct"), { target: { value: "20" } });
-      fireEvent.change(screen.getByTestId("commentary"), { target: { value: "Business trip" } });
-  
       // Simulate file selection and change event
+      fillFormWithValidData()
       const fileInput = screen.getByTestId("file");
       const validFile = new File(["file content"], "test.jpg", { type: "image/jpeg" });
       fireEvent.change(fileInput, { target: { files: [validFile] } });
@@ -333,12 +312,11 @@ describe("Given I am connected as an employee", () => {
       await waitFor(() => {
         expect(handleSubmit).toHaveBeenCalled();
         expect(updateMock).toHaveBeenCalled();
+        expect(onNavigate).toHaveBeenCalledWith(ROUTES_PATH['Bills']);
       });
-  
-      // Check navigation after form submission
-      expect(onNavigate).toHaveBeenCalledWith(ROUTES_PATH['Bills']);
     });
   
+    // Tests error handling during API submission
     test("Then it should handle errors when the API POST request fails", async () => {
       // Mock a failing POST request
       const updateMock = jest.fn().mockRejectedValue(new Error("API POST error"));
@@ -355,16 +333,8 @@ describe("Given I am connected as an employee", () => {
         localStorage: window.localStorage
       });
   
-      // Fill in the form with valid data
-      fireEvent.change(screen.getByTestId("expense-type"), { target: { value: "Transports" } });
-      fireEvent.change(screen.getByTestId("expense-name"), { target: { value: "Taxi to airport" } });
-      fireEvent.change(screen.getByTestId("datepicker"), { target: { value: "2023-10-20" } });
-      fireEvent.change(screen.getByTestId("amount"), { target: { value: "120" } });
-      fireEvent.change(screen.getByTestId("vat"), { target: { value: "10" } });
-      fireEvent.change(screen.getByTestId("pct"), { target: { value: "20" } });
-      fireEvent.change(screen.getByTestId("commentary"), { target: { value: "Business trip" } });
-  
       // Simulate file selection and change event
+      fillFormWithValidData()
       const fileInput = screen.getByTestId("file");
       const validFile = new File(["file content"], "test.jpg", { type: "image/jpeg" });
       fireEvent.change(fileInput, { target: { files: [validFile] } });

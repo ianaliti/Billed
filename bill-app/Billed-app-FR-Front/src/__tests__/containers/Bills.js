@@ -3,14 +3,6 @@
  */
 
 import mockStore from "../../__mocks__/store.js";
-
-jest.mock("../../app/store", () => {
-  return {
-    __esModule: true,
-    default: mockStore
-  }
-})
-
 import { screen, waitFor, fireEvent } from "@testing-library/dom";
 import userEvent from "@testing-library/user-event";
 import BillsUI from "../../views/BillsUI.js";
@@ -20,6 +12,13 @@ import { ROUTES_PATH } from "../../constants/routes.js";
 import { localStorageMock } from "../../__mocks__/localStorage.js";
 import router from "../../app/Router.js";
 import { ROUTES } from "../../constants/routes.js";
+
+jest.mock("../../app/store", () => {
+  return {
+    __esModule: true,
+    default: mockStore
+  }
+})
 
 // Mock jquery and bootstrap modal
 global.$ = jest.fn(() => ({
@@ -31,6 +30,8 @@ global.$ = jest.fn(() => ({
   click: jest.fn(),
 }));
 
+// UNIT TESTS
+//Testing the Bills component functionality
 describe("Given I am connected as an employee", () => {
   beforeEach(() => {
     Object.defineProperty(window, "localStorage", { value: localStorageMock });
@@ -44,6 +45,7 @@ describe("Given I am connected as an employee", () => {
 
   describe("When I am on Bills Page", () => {
 
+    // Tests if the bills icon is properly highlighted in the layout
     describe("When page is loaded", () => {
       test("Then bill icon in vertical layout should be highlighted", async () => {
         const root = document.createElement("div");
@@ -53,10 +55,12 @@ describe("Given I am connected as an employee", () => {
         window.onNavigate(ROUTES_PATH.Bills);
         await waitFor(() => screen.getByTestId("icon-window"));
         const windowIcon = screen.getByTestId("icon-window");
+
         expect(windowIcon.classList.contains("active-icon")).toBe(true);
       });
     })
 
+    // Verifies the loading state UI rendering
     describe("When page is loading", () => {
       test("Then, Loading page should be rendered", () => {
         const html = BillsUI({ loading: true })
@@ -65,41 +69,30 @@ describe("Given I am connected as an employee", () => {
       })
     })
 
+    // Verifies error state UI rendering
     describe("When an error occurs", () => {
-      test("Then, Error page should be rendered", () => {
+      test("Then it should render the Error page", () => {
         const html = BillsUI({ error: 'Some error message' })
         document.body.innerHTML = html
         expect(screen.getAllByText('Erreur')).toBeTruthy()
       })
     })
-    
+
+    // Verifies that bills are properly sorted by date
     describe("When bills are displayed", () => {
       test("Then bills should be ordered from latest to earliest", () => {
         document.body.innerHTML = BillsUI({ data: bills });
-  
-        // Select all date elements by their test ID           
         const dateElements = screen.getAllByTestId("bill-date");
-  
-        // Extract the innerText of each date element       
         const dates = dateElements.map((el) => el.innerHTML);
-  
-        // Parse the displayed dates into Date objects for comparison       
         const parsedDates = dates.map((date) => new Date(date));
-  
-        // Create a sorted version of the parsed dates (from earliest to latest)       
         const sortedDates = [...parsedDates].sort((a, b) => b - a);
-  
-        // Check if the parsed dates match the sorted version       
+
         expect(parsedDates).toEqual(sortedDates);
       });
     })
 
+    // Tests if event listeners are properly attached to buttons and icons
     test("Then the newBill button and eye icons should have event listeners", () => {
-
-      Object.defineProperty(window, 'localStorage', { value: localStorageMock })
-      window.localStorage.setItem('user', JSON.stringify({
-        type: 'Employee'
-      }))
 
       document.body.innerHTML = BillsUI({ data: bills });
 
@@ -137,6 +130,7 @@ describe("Given I am connected as an employee", () => {
     });
   });
 
+  // Tests the getBills method functionality
   describe("When I navigate to Bills page", () => {
     test("Then getBills method should fetch bills from mock API", async () => {
       const billsClass = new Bills({
@@ -150,7 +144,7 @@ describe("Given I am connected as an employee", () => {
       const fetchedBills = await billsClass.getBills();
 
       expect(getSpy).toHaveBeenCalledTimes(1);
-      expect(fetchedBills.length).toBe(4); // Adjust based on your mocked data
+      expect(fetchedBills.length).toBe(4); 
     });
 
     test("Then getBills method should handle API error", async () => {
@@ -187,9 +181,10 @@ describe("Given I am connected as an employee", () => {
 });
 
 // Integration test for GET Bills
+// Testing the interaction between Bills component and the API
 describe("Given I am a user connected as Employee", () => {
   describe("When I navigate to Bills Page", () => {
-    test("fetches bills from mock API GET", async () => {
+    test("Then it shouls fetch the bills from mock API GET", async () => {
       // Set up user as Employee
       localStorage.setItem(
         "user",
@@ -216,6 +211,7 @@ describe("Given I am a user connected as Employee", () => {
       expect(screen.getByTestId("btn-new-bill")).toBeTruthy();
     });
 
+    // Tests the error handling flow for API failures
     describe("When an error occurs on API", () => {
       beforeEach(() => {
         jest.spyOn(mockStore, "bills");

@@ -111,5 +111,17 @@ tr td:nth-of-type(5) {
 }
 
 .bill-proof-container {
-  overflow: scroll;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%; 
+  height: auto; 
+  max-height: 80vh; 
+  overflow: hidden;
+}
+
+.bill-proof-container img {
+  max-width: 100%; 
+  max-height: 100%; 
+  object-fit: contain; 
 }

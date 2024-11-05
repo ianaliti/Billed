@@ -205,7 +205,7 @@ describe("Given I am a user connected as Employee", () => {
 
       // Verify that bills are displayed (using test IDs from your UI)
       const billsTableRows = await screen.getAllByTestId("bill-date");
-      expect(billsTableRows.length).toBe(4); // Adjust based on your mocked data
+      expect(billsTableRows.length).toBe(4); 
 
       // Verify that new bill button is present
       expect(screen.getByTestId("btn-new-bill")).toBeTruthy();

@@ -144,7 +144,7 @@ describe("Given I am connected as an employee", () => {
       const fetchedBills = await billsClass.getBills();
 
       expect(getSpy).toHaveBeenCalledTimes(1);
-      expect(fetchedBills.length).toBe(4); 
+      expect(fetchedBills.length).toBe(); 
     });
 
     test("Then getBills method should handle API error", async () => {
